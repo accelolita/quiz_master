@@ -1,0 +1,106 @@
+#include "AudioManager.h"
+#include "DisplayManager.h"
+#include "NetworkManager.h"
+#include <Arduino.h>
+
+// --- 定数定義 ---
+#define DFPLAYER_TX 17
+#define DFPLAYER_RX 18
+#define DFPLAYER_BUSY 38
+
+#define BTN_QUESTION 15
+#define BTN_CORRECT 1
+#define BTN_INCORRECT 2
+
+// --- グローバルオブジェクト ---
+DisplayManager display;
+AudioManager audio(DFPLAYER_RX, DFPLAYER_TX, DFPLAYER_BUSY);
+NetworkManager network;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("\n--- Quiz Master Start ---");
+
+  // PSRAM Check
+  if (psramFound()) {
+    Serial.printf("PSRAM ID: %08X, Size: %d bytes\n", 0, ESP.getPsramSize());
+    Serial.println("PSRAM Found and Initialized");
+  } else {
+    Serial.println("PSRAM NOT FOUND or FAILED");
+  }
+
+  // 1. ディスプレイ設定PSRAM Check
+  if (psramFound()) {
+    Serial.printf("PSRAM ID: %08X, Size: %d bytes\n", 0, ESP.getPsramSize());
+    Serial.println("PSRAM Found and Initialized");
+  } else {
+    Serial.println("PSRAM NOT FOUND or FAILED");
+  }
+
+  // 1. ディスプレイ設定
+  Serial.println("Debug: Calling display.init()");
+  display.init();
+  Serial.println("Debug: Calling display.showWelcome()");
+  display.showWelcome();
+  Serial.println("Display Initialized");
+
+  // 2. オーディオ設定
+  Serial.println("Initializing DFPlayer...");
+  Serial.println("Debug: Calling audio.init()");
+  if (audio.init()) {
+    Serial.println("DFPlayer online.");
+    display.showStatus("Audio OK");
+    // audio.play(1); // 起動音などを再生する場合
+  } else {
+    Serial.println("Unexpected error: DFPlayer not detected!");
+    display.showError("Audio Error!");
+  }
+
+  // 3. ESP-NOW設定
+  Serial.println("Debug: Calling network.init()");
+  if (network.init()) {
+    Serial.println("ESP-NOW Initialized");
+    display.showStatus("ESP-NOW OK");
+  } else {
+    Serial.println("Error initializing ESP-NOW");
+    display.showError("Network Error!");
+  }
+
+  // 4. ボタン設定
+  pinMode(BTN_QUESTION, INPUT_PULLUP);
+  pinMode(BTN_CORRECT, INPUT_PULLUP);
+  pinMode(BTN_INCORRECT, INPUT_PULLUP);
+
+  Serial.println("System Ready.");
+}
+
+void loop() {
+  // メインループのロジック
+
+  // 簡易デバウンス処理
+  static unsigned long lastDebounceTime = 0;
+  unsigned long debounceDelay = 200;
+
+  if (millis() - lastDebounceTime > debounceDelay) {
+    if (digitalRead(BTN_QUESTION) == LOW) {
+      Serial.println("Question Button Pressed");
+      audio.playQuestion();
+      display.showStatus("Question!");
+      network.broadcast(NetworkManager::SIGNAL_QUESTION);
+      lastDebounceTime = millis();
+    } else if (digitalRead(BTN_CORRECT) == LOW) {
+      Serial.println("Correct Button Pressed");
+      audio.playCorrect();
+      display.showStatus("Correct!");
+      lastDebounceTime = millis();
+    } else if (digitalRead(BTN_INCORRECT) == LOW) {
+      Serial.println("Incorrect Button Pressed");
+      audio.playIncorrect();
+      display.showStatus("Incorrect!");
+      lastDebounceTime = millis();
+    }
+  }
+
+  delay(10);
+}
