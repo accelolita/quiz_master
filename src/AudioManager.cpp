@@ -15,12 +15,22 @@ bool AudioManager::init() {
   }
 
   // デフォルト設定
-  myDFPlayer.volume(20);
+  setVolume(VOL_DEFAULT);
   return true;
 }
 
 // 音量を設定 (0-30)
-void AudioManager::setVolume(int volume) { myDFPlayer.volume(volume); }
+void AudioManager::setVolume(int volume) {
+  if (volume > VOL_MAX)
+    volume = VOL_MAX;
+  if (volume < VOL_MIN)
+    volume = VOL_MIN;
+  _volume = volume;
+  myDFPlayer.volume(_volume);
+}
+
+// 現在の音量を取得
+int AudioManager::getVolume() { return _volume; }
 
 // 指定したファイル番号の音声を再生
 void AudioManager::play(int fileNumber) { myDFPlayer.play(fileNumber); }

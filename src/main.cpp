@@ -39,6 +39,7 @@ void setup() {
   }
 
   // 1. ディスプレイ設定
+  delay(2000); // コールドブート時のホワイトスクリーン対策
   Serial.println("Debug: Calling display.init()");
   display.init();
   Serial.println("Debug: Calling display.showWelcome()");
@@ -72,10 +73,22 @@ void setup() {
   pinMode(BTN_CORRECT, INPUT_PULLUP);
   pinMode(BTN_INCORRECT, INPUT_PULLUP);
 
+  // 4. GUI描画 & 初期状態表示
+  display.drawGUI();
+  display.showStatus("System Ready");
+  display.updateVolume(audio.getVolume());
+
   Serial.println("System Ready.");
 }
 
 void loop() {
+  // タッチ操作による音量変更
+  int currentVolume = audio.getVolume();
+  if (display.handleTouch(currentVolume)) {
+    audio.setVolume(currentVolume);
+    display.updateVolume(currentVolume);
+    delay(100); // 簡易デバウンス
+  }
   // メインループのロジック
 
   // 簡易デバウンス処理
