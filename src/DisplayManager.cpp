@@ -11,15 +11,16 @@ void DisplayManager::init() {
   tft->init();
   tft->setRotation(1); // 横画面 (Landscape)
   tft->fillScreen(TFT_BLACK);
-  tft->init();
-  tft->setRotation(1); // 横画面 (Landscape)
-  tft->fillScreen(TFT_BLACK);
 
   // タッチキャリブレーション（実測値またはデフォルト値）
   uint16_t calData[5] = {
       300, 3500, 300, 3500,
       1}; // [0]=minX, [1]=maxX, [2]=minY, [3]=maxY, [4]=rotation
   tft->setTouch(calData);
+
+#ifdef TOUCH_IRQ
+  pinMode(TOUCH_IRQ, INPUT_PULLUP);
+#endif
 
   // Serial.println("DisplayManager::init() - TFT Init Skipped");
 }
@@ -112,7 +113,15 @@ int DisplayManager::handleTouch() {
     return 0;
 
   uint16_t x, y;
-  // タッチが押されているか確認
+
+#ifdef TOUCH_IRQ
+  // IRQピンがLOWのときだけSPI通信を行う（負荷軽減＆感度向上）
+  if (digitalRead(TOUCH_IRQ) == HIGH) {
+    return 0; // タッチされていない
+  }
+#endif
+  Serial.printf("IRQ_LOW\n");
+  // 感度設定: 300 -> 1000 (値を上げると軽いタッチでも反応するようになるはず)
   if (tft->getTouch(&x, &y)) {
     uint16_t rawX = x;
     uint16_t rawY = y;
