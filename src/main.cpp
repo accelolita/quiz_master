@@ -83,10 +83,19 @@ void setup() {
 
 void loop() {
   // タッチ操作による音量変更
-  int currentVolume = audio.getVolume();
-  if (display.handleTouch(currentVolume)) {
-    audio.setVolume(currentVolume);
-    display.updateVolume(currentVolume);
+  // タッチ操作による音量変更
+  int touchResult = display.handleTouch();
+  if (touchResult != 0) {
+    // ボタンが押されたときだけ現在の音量を取得して変更する
+    int currentVolume = audio.getVolume();
+    int newVolume = currentVolume + touchResult;
+
+    // setVolume側で範囲制限(0-30 or 1-31)されるのでそのままセット
+    audio.setVolume(newVolume);
+
+    // 反映された値を再取得して表示更新
+    display.updateVolume(audio.getVolume());
+
     delay(100); // 簡易デバウンス
   }
   // メインループのロジック

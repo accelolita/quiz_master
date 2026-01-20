@@ -75,19 +75,19 @@ void DisplayManager::drawGUI() {
   tft->drawRect(BTN_MINUS_X, BUTTON_AREA_Y, BTN_W, BTN_H, TFT_WHITE);
   tft->setTextColor(TFT_WHITE, TFT_DARKGREY);
   tft->setTextSize(2);
-  tft->setCursor(BTN_MINUS_X + 20, BUTTON_AREA_Y + 20);
+  tft->setCursor(BTN_MINUS_X + 10, BUTTON_AREA_Y + 20); // テキスト位置微調整
   tft->print("VOL -");
 
   // ボタン描画 (VOL +)
   tft->fillRect(BTN_PLUS_X, BUTTON_AREA_Y, BTN_W, BTN_H, TFT_DARKGREY);
   tft->drawRect(BTN_PLUS_X, BUTTON_AREA_Y, BTN_W, BTN_H, TFT_WHITE);
   tft->setTextColor(TFT_WHITE, TFT_DARKGREY);
-  tft->setCursor(BTN_PLUS_X + 20, BUTTON_AREA_Y + 20);
+  tft->setCursor(BTN_PLUS_X + 10, BUTTON_AREA_Y + 20); // テキスト位置微調整
   tft->print("VOL +");
 
   // 音量ラベル
   tft->setTextColor(TFT_WHITE, TFT_BLACK);
-  tft->setCursor(130, VOL_TEXT_Y);
+  tft->setCursor(VOL_LABEL_X, VOL_TEXT_Y);
   tft->print("VOL:");
 }
 
@@ -96,37 +96,47 @@ void DisplayManager::updateVolume(int volume) {
   if (!tft)
     return;
   // 前の数字を消すために黒で塗りつぶし
-  tft->fillRect(180, VOL_TEXT_Y, 40, 20, TFT_BLACK);
+  // 前の数字を消すために黒で塗りつぶし
+  tft->fillRect(VOL_VALUE_X, VOL_TEXT_Y, 40, 20, TFT_BLACK);
 
   tft->setTextColor(TFT_WHITE, TFT_BLACK);
   tft->setTextSize(2);
-  tft->setCursor(180, VOL_TEXT_Y);
+  tft->setCursor(VOL_VALUE_X, VOL_TEXT_Y);
   tft->print(volume);
 }
 
 // タッチ処理 (音量変更があればtrue)
-bool DisplayManager::handleTouch(int &volume) {
+// タッチ処理 (0:なし, 1:UP, -1:DOWN)
+int DisplayManager::handleTouch() {
   if (!tft)
-    return false;
+    return 0;
 
   uint16_t x, y;
   // タッチが押されているか確認
   if (tft->getTouch(&x, &y)) {
+    uint16_t rawX = x;
+    uint16_t rawY = y;
+
+    // 座標補正 (180度回転のズレを修正)
+    x = 320 - x;
+    y = 240 - y;
+
+    Serial.printf("Touch: Raw(%d,%d) -> Corr(%d,%d) (BTN-: %d-%d)\n", rawX,
+                  rawY, x, y, BTN_MINUS_X, BTN_MINUS_X + BTN_W); // Debug Log
+
     // デバウンス処理が必要な場合はここに追加
 
     // VOL - ボタン判定
     if (x >= BTN_MINUS_X && x <= (BTN_MINUS_X + BTN_W) && y >= BUTTON_AREA_Y &&
         y <= (BUTTON_AREA_Y + BTN_H)) {
-      volume--;
-      return true;
+      return -1;
     }
 
     // VOL + ボタン判定
     if (x >= BTN_PLUS_X && x <= (BTN_PLUS_X + BTN_W) && y >= BUTTON_AREA_Y &&
         y <= (BUTTON_AREA_Y + BTN_H)) {
-      volume++;
-      return true;
+      return 1;
     }
   }
-  return false;
+  return 0;
 }

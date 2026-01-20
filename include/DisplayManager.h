@@ -15,7 +15,7 @@ public:
 
   void drawGUI();                // GUI描画 (ボタン枠など)
   void updateVolume(int volume); // 音量表示更新
-  bool handleTouch(int &volume); // タッチ処理 (音量変更があればtrue)
+  int handleTouch();             // タッチ処理 (0:なし, 1:UP, -1:DOWN)
 
   TFT_eSPI *getTft(); // TFTインスタンス取得（必要な場合）
 
@@ -27,11 +27,13 @@ private:
   static const int STATUS_AREA_Y = 0;
   static const int STATUS_AREA_H = 100;
   static const int BUTTON_AREA_Y = 120;
-  static const int BTN_W = 100;
+  static const int BTN_W = 80; // ボタン幅を少し狭く
   static const int BTN_H = 60;
-  static const int BTN_MINUS_X = 20;
-  static const int BTN_PLUS_X = 200;
+  static const int BTN_MINUS_X = 10; // 左寄せ
+  static const int BTN_PLUS_X = 230; // 右寄せ
   static const int VOL_TEXT_Y = 140;
+  static const int VOL_LABEL_X = 110; // "VOL:" ラベル位置
+  static const int VOL_VALUE_X = 170; // 数値表示位置
 };
 
 #endif
