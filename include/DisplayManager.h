@@ -2,6 +2,7 @@
 #define DISPLAY_MANAGER_H
 
 #include <TFT_eSPI.h>
+#include <XPT2046_Touchscreen.h>
 
 // ディスプレイ管理クラス
 class DisplayManager {
@@ -22,6 +23,7 @@ public:
 private:
 private:
   TFT_eSPI *tft;
+  XPT2046_Touchscreen *ts;
 
   // GUI Layout Constants
   static const int STATUS_AREA_Y = 0;

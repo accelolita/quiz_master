@@ -1,7 +1,7 @@
 #include "DisplayManager.h"
 #include <cstdint>
 
-DisplayManager::DisplayManager() : tft(nullptr) {}
+DisplayManager::DisplayManager() : tft(nullptr), ts(nullptr) {}
 
 // ディスプレイの初期化
 void DisplayManager::init() {
@@ -12,17 +12,19 @@ void DisplayManager::init() {
   tft->setRotation(1); // 横画面 (Landscape)
   tft->fillScreen(TFT_BLACK);
 
-  // タッチキャリブレーション（実測値またはデフォルト値）
-  uint16_t calData[5] = {
-      300, 3500, 300, 3500,
-      1}; // [0]=minX, [1]=maxX, [2]=minY, [3]=maxY, [4]=rotation
-  tft->setTouch(calData);
-
+  // XPT2046初期化
+  if (ts == nullptr) {
+    // TOUCH_IRQはplatformio.iniで定義されていると仮定 (GPIO 8)
 #ifdef TOUCH_IRQ
-  pinMode(TOUCH_IRQ, INPUT_PULLUP);
+    ts = new XPT2046_Touchscreen(TOUCH_CS, TOUCH_IRQ);
+#else
+    ts = new XPT2046_Touchscreen(TOUCH_CS);
 #endif
+    ts->begin();
+    ts->setRotation(1); // 画面に合わせる
+  }
 
-  // Serial.println("DisplayManager::init() - TFT Init Skipped");
+  // Serial.println("DisplayManager::init() - TFT & Touch Init Done");
 }
 
 // 起動時のウェルカム画面を表示
@@ -106,46 +108,42 @@ void DisplayManager::updateVolume(int volume) {
   tft->print(volume);
 }
 
-// タッチ処理 (音量変更があればtrue)
 // タッチ処理 (0:なし, 1:UP, -1:DOWN)
 int DisplayManager::handleTouch() {
-  if (!tft)
+  if (!ts || !ts->touched())
     return 0;
 
-  uint16_t x, y;
+  TS_Point p = ts->getPoint();
 
-#ifdef TOUCH_IRQ
-  // IRQピンがLOWのときだけSPI通信を行う（負荷軽減＆感度向上）
-  if (digitalRead(TOUCH_IRQ) == HIGH) {
-    return 0; // タッチされていない
+  // マッピング: 生の値(0-4095) -> 画面座標(320x240)
+  // XPT2046の座標系は実測して調整が必要だが、とりあえず標準的な範囲でマッピング
+  // 必要に応じて map 関数の引数を調整してください
+  // 例: map(value, min_raw, max_raw, min_screen, max_screen)
+
+  // 反転が必要な場合を考慮して計算
+  // マッピング: 生の値(0-4095) -> 画面座標(320x240)
+  // 左上が(320,240)になっているとのことで、出力を反転させます (0,0)にするため
+  // User Feedback: LT(-5,1), LB(-8,236), RT(308,-3) -> Adjusted Range
+  int16_t x = map(p.x, 320, 3860, 320, 0);
+  int16_t y = map(p.y, 250, 3800, 240, 0);
+
+  // 以前のキャリブレーションデータに基づき、必要なら反転などの補正を追加
+  // XPT2046ライブラリのsetRotation(1)である程度合うはずだが、ズレる場合はここで補正
+
+  Serial.printf("Touch Raw: %d, %d -> Screen: %d, %d (BTN-: %d-%d)\n", p.x, p.y,
+                x, y, BTN_MINUS_X, BTN_MINUS_X + BTN_W);
+
+  // VOL - ボタン判定
+  if (x >= BTN_MINUS_X && x <= (BTN_MINUS_X + BTN_W) && y >= BUTTON_AREA_Y &&
+      y <= (BUTTON_AREA_Y + BTN_H)) {
+    return -1;
   }
-#endif
-  Serial.printf("IRQ_LOW\n");
-  // 感度設定: 300 -> 1000 (値を上げると軽いタッチでも反応するようになるはず)
-  if (tft->getTouch(&x, &y)) {
-    uint16_t rawX = x;
-    uint16_t rawY = y;
 
-    // 座標補正 (180度回転のズレを修正)
-    x = 320 - x;
-    y = 240 - y;
-
-    Serial.printf("Touch: Raw(%d,%d) -> Corr(%d,%d) (BTN-: %d-%d)\n", rawX,
-                  rawY, x, y, BTN_MINUS_X, BTN_MINUS_X + BTN_W); // Debug Log
-
-    // デバウンス処理が必要な場合はここに追加
-
-    // VOL - ボタン判定
-    if (x >= BTN_MINUS_X && x <= (BTN_MINUS_X + BTN_W) && y >= BUTTON_AREA_Y &&
-        y <= (BUTTON_AREA_Y + BTN_H)) {
-      return -1;
-    }
-
-    // VOL + ボタン判定
-    if (x >= BTN_PLUS_X && x <= (BTN_PLUS_X + BTN_W) && y >= BUTTON_AREA_Y &&
-        y <= (BUTTON_AREA_Y + BTN_H)) {
-      return 1;
-    }
+  // VOL + ボタン判定
+  if (x >= BTN_PLUS_X && x <= (BTN_PLUS_X + BTN_W) && y >= BUTTON_AREA_Y &&
+      y <= (BUTTON_AREA_Y + BTN_H)) {
+    return 1;
   }
+
   return 0;
 }
