@@ -33,11 +33,16 @@ void AudioManager::setVolume(int volume) {
 int AudioManager::getVolume() { return _volume; }
 
 // 指定したファイル番号の音声を再生
-void AudioManager::play(int fileNumber) { myDFPlayer.play(fileNumber); }
+void AudioManager::play(int fileNumber) {
+  // SDカードの "01" フォルダ内のファイル名 (001.mp3, 002.mp3 等)
+  // に基づいて再生する
+  myDFPlayer.playFolder(1, fileNumber);
+}
 
 void AudioManager::playQuestion() { play(SOUND_QUESTION); }
 void AudioManager::playCorrect() { play(SOUND_CORRECT); }
 void AudioManager::playIncorrect() { play(SOUND_INCORRECT); }
+void AudioManager::playAnswerPermission() { play(SOUND_ANSWER_PERMISSION); }
 
 // 再生中かどうかを判定
 bool AudioManager::isBusy() {

@@ -109,17 +109,22 @@ void loop() {
       Serial.println("Question Button Pressed");
       audio.playQuestion();
       display.showStatus("Question!");
-      network.broadcast(NetworkManager::SIGNAL_QUESTION);
+      // ID=0 (全体), CMD=QUESTION
+      network.broadcast(0, NetworkManager::CMD_QUESTION);
       lastDebounceTime = millis();
     } else if (digitalRead(BTN_CORRECT) == LOW) {
       Serial.println("Correct Button Pressed");
       audio.playCorrect();
       display.showStatus("Correct!");
+      // ID=0, CMD=CORRECT
+      network.broadcast(0, NetworkManager::CMD_CORRECT);
       lastDebounceTime = millis();
     } else if (digitalRead(BTN_INCORRECT) == LOW) {
       Serial.println("Incorrect Button Pressed");
       audio.playIncorrect();
       display.showStatus("Incorrect!");
+      // ID=0, CMD=INCORRECT
+      network.broadcast(0, NetworkManager::CMD_INCORRECT);
       lastDebounceTime = millis();
     }
   }
