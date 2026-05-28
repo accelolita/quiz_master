@@ -17,22 +17,15 @@
 struct SoundButton {
   int pin;
   int fileNumber;
-  const char* label;
+  const char *label;
 };
 
 // 効果音再生用ボタンのマッピング（10個のピン）
 const SoundButton SOUND_BUTTONS[] = {
-  {16, 5, "Sound 005"},
-  {41, 6, "Sound 006"},
-  {40, 7, "Sound 007"},
-  {39, 8, "Sound 008"},
-  {48, 9, "Sound 009"},
-  {47, 10, "Sound 010"},
-  {21, 11, "Sound 011"},
-  {14, 12, "Sound 012"},
-  {10, 13, "Sound 013"},
-  {9, 14, "Sound 014"}
-};
+    {16, 14, "Sound 014"}, {41, 5, "Sound 005"},  {40, 6, "Sound 006"},
+    {39, 7, "Sound 007"},  {48, 8, "Sound 008"},  {47, 9, "Sound 009"},
+    {21, 10, "Sound 010"}, {14, 11, "Sound 011"}, {10, 12, "Sound 012"},
+    {9, 13, "Sound 013"}};
 const int NUM_SOUND_BUTTONS = sizeof(SOUND_BUTTONS) / sizeof(SOUND_BUTTONS[0]);
 
 // --- グローバルオブジェクト ---
@@ -175,7 +168,6 @@ void loop() {
         }
       }
     }
-
   }
 
   delay(10);
