@@ -152,8 +152,8 @@ void loop() {
         Serial.println("Incorrect Button 2 Pressed");
         audio.playIncorrect();
         display.showStatus("Incorrect 2!");
-        // ID=0, CMD=INCORRECT
-        network.broadcast(0, NetworkManager::CMD_INCORRECT);
+        // ID=0, CMD=QUESTION
+        network.broadcast(0, NetworkManager::CMD_QUESTION);
         lastDebounceTime = millis();
       } else {
         // 効果音再生ボタンの押下検知
