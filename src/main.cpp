@@ -11,6 +11,29 @@
 #define BTN_QUESTION 15
 #define BTN_CORRECT 1
 #define BTN_INCORRECT 2
+#define BTN_INCORRECT_2 42
+
+// 効果音再生用ボタンの構造体定義
+struct SoundButton {
+  int pin;
+  int fileNumber;
+  const char* label;
+};
+
+// 効果音再生用ボタンのマッピング（10個のピン）
+const SoundButton SOUND_BUTTONS[] = {
+  {16, 5, "Sound 005"},
+  {41, 6, "Sound 006"},
+  {40, 7, "Sound 007"},
+  {39, 8, "Sound 008"},
+  {48, 9, "Sound 009"},
+  {47, 10, "Sound 010"},
+  {21, 11, "Sound 011"},
+  {14, 12, "Sound 012"},
+  {10, 13, "Sound 013"},
+  {9, 14, "Sound 014"}
+};
+const int NUM_SOUND_BUTTONS = sizeof(SOUND_BUTTONS) / sizeof(SOUND_BUTTONS[0]);
 
 // --- グローバルオブジェクト ---
 DisplayManager display;
@@ -72,6 +95,10 @@ void setup() {
   pinMode(BTN_QUESTION, INPUT_PULLUP);
   pinMode(BTN_CORRECT, INPUT_PULLUP);
   pinMode(BTN_INCORRECT, INPUT_PULLUP);
+  pinMode(BTN_INCORRECT_2, INPUT_PULLUP);
+  for (int i = 0; i < NUM_SOUND_BUTTONS; i++) {
+    pinMode(SOUND_BUTTONS[i].pin, INPUT_PULLUP);
+  }
 
   // 4. GUI描画 & 初期状態表示
   display.drawGUI();
@@ -128,8 +155,27 @@ void loop() {
         // ID=0, CMD=INCORRECT
         network.broadcast(0, NetworkManager::CMD_INCORRECT);
         lastDebounceTime = millis();
+      } else if (digitalRead(BTN_INCORRECT_2) == LOW) {
+        Serial.println("Incorrect Button 2 Pressed");
+        audio.playIncorrect();
+        display.showStatus("Incorrect 2!");
+        // ID=0, CMD=INCORRECT
+        network.broadcast(0, NetworkManager::CMD_INCORRECT);
+        lastDebounceTime = millis();
+      } else {
+        // 効果音再生ボタンの押下検知
+        for (int i = 0; i < NUM_SOUND_BUTTONS; i++) {
+          if (digitalRead(SOUND_BUTTONS[i].pin) == LOW) {
+            Serial.printf("%s Button Pressed\n", SOUND_BUTTONS[i].label);
+            audio.play(SOUND_BUTTONS[i].fileNumber);
+            display.showStatus(SOUND_BUTTONS[i].label);
+            lastDebounceTime = millis();
+            break;
+          }
+        }
       }
     }
+
   }
 
   delay(10);
